@@ -13,19 +13,26 @@
 //
 //*********************************************************************
 
+#include <iostream>
 #include "stdafx.h"
 #include "SmartCacheImpl.h"
 #include "Workloads.h"
+
+inline void GetPut(SmartCacheImpl<int32_t, int32_t>& smartCache, int32_t i)
+{
+    int32_t* element = smartCache.Get(i);
+    if (element == nullptr)
+    {
+        smartCache.Push(i, i);
+    }
+}
+
 
 uint64_t CyclicalWorkload(uint64_t sequenceNumber, SmartCacheImpl<int32_t, int32_t>& smartCache)
 {
     for (int32_t i = 1; i < sequenceNumber; i++)
     {
-        int32_t* element = smartCache.Get(i);
-        if (element == nullptr)
-        {
-            smartCache.Push(i, i);
-        }
+        GetPut(smartCache, i);
     }
 
     return 1;
@@ -37,19 +44,35 @@ uint64_t ElevatorWorkload(uint64_t sequenceNumber, SmartCacheImpl<int32_t, int32
     
     for (; i < sequenceNumber; i++)
     {
-        int32_t* element = smartCache.Get(i);
-        if (element == nullptr)
-        {
-            smartCache.Push(i, i);
-        }
+        GetPut(smartCache, i);
     }
 
     for (; i >= 1; i--)
     {
-        int32_t* element = smartCache.Get(i);
-        if (element == nullptr)
+        GetPut(smartCache, i);
+    }
+
+    return 1;
+}
+
+
+uint64_t LFUFriendlyWorkload(SmartCacheImpl<int32_t, int32_t>& smartCache, int32_t cacheSize, int freq, int patternRep)
+{
+    std::cout << "Running workload with size " << cacheSize << std::endl;
+    for(int32_t i=0; i < cacheSize; i++) 
+    {
+        for(int j=0; j < freq; j++) 
         {
-            smartCache.Push(i, i);
+            GetPut(smartCache, i);
+        }
+    }
+
+    for(int32_t i=0; i < patternRep; i++)
+    {
+        for(int32_t j=0; j < cacheSize - 1; j++)
+        {
+            GetPut(smartCache, cacheSize + j);
+            GetPut(smartCache, j + 1);
         }
     }
 
