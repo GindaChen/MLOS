@@ -236,6 +236,8 @@ main(
 
         // Next, we instruct our component to reconfigure itself before
         // exploring more samples in the configuration space.
+        
+
         //
         smartCache.Reconfigure();
     }

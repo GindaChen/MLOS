@@ -155,6 +155,8 @@ inline void SmartCacheImpl<TKey, TValue>::Reconfigure()
     //
     m_cacheSize = m_config.CacheSize;
 
+    std::cout << "[CSV]" << (int)(m_config.EvictionPolicy) << "," << m_config.CacheSize << std::endl;
+
     // Clear the cache.
     //
     m_elementSequence.clear();
