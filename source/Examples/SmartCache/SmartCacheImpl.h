@@ -14,6 +14,7 @@
 //*********************************************************************
 
 #pragma once
+#include <chrono>
 
 template<typename TKey, typename TValue>
 class SmartCacheImpl
@@ -61,20 +62,17 @@ inline bool SmartCacheImpl<TKey, TValue>::Contains(TKey key)
 {
     bool isInCache = m_lookupTable.find(key) != m_lookupTable.end();
 
-    SmartCache::CacheRequestEventMessage msg;
-    msg.ConfigId = m_config.ConfigId;
-    msg.Key = key;
-    msg.IsInCache = isInCache;
-
-    m_config.SendTelemetryMessage(msg);
-
     return isInCache;
 }
 
 template<typename TKey, typename TValue>
 inline TValue* SmartCacheImpl<TKey, TValue>::Get(TKey key)
 {
-    if (!Contains(key))
+    auto start = std::chrono::high_resolution_clock::now();
+
+    bool isInCache = Contains(key);
+
+    if (!isInCache)
     {
         return nullptr;
     }
@@ -91,6 +89,18 @@ inline TValue* SmartCacheImpl<TKey, TValue>::Get(TKey key)
     // As we moved the element, we need to update the element ref.
     //
     lookupItr->second = m_elementSequence.begin();
+
+    auto end = std::chrono::high_resolution_clock::now();
+    
+    // TODO: This will incur a type error.
+    double latency = (end - start).count();
+
+    SmartCache::CacheRequestEventMessage msg;
+    msg.ConfigId = m_config.ConfigId;
+    msg.Key = key;
+    msg.IsInCache = isInCache;
+    msg.Latency = latency;
+    m_config.SendTelemetryMessage(msg);
 
     return &m_elementSequence.front();
 }
