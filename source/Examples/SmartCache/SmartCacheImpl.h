@@ -15,6 +15,7 @@
 
 #pragma once
 
+
 template<typename TKey, typename TValue>
 class SmartCacheImpl
 {
@@ -75,12 +76,12 @@ inline bool SmartCacheImpl<TKey, TValue>::Contains(TKey key)
 {
     bool isInCache = m_lookupTable.find(key) != m_lookupTable.end();
 
-    SmartCache::CacheRequestEventMessage msg;
-    msg.ConfigId = m_config.ConfigId;
-    msg.Key = key;
-    msg.IsInCache = isInCache;
+    // SmartCache::CacheRequestEventMessage msg;
+    // msg.ConfigId = m_config.ConfigId;
+    // msg.Key = key;
+    // msg.IsInCache = isInCache;
 
-    m_config.SendTelemetryMessage(msg);
+    // m_config.SendTelemetryMessage(msg);
 
     return isInCache;
 }
@@ -88,12 +89,16 @@ inline bool SmartCacheImpl<TKey, TValue>::Contains(TKey key)
 template<typename TKey, typename TValue>
 inline TValue* SmartCacheImpl<TKey, TValue>::Get(TKey key)
 {
+    auto start = std::chrono::high_resolution_clock::now();
+
     if (!Contains(key))
     {
         return nullptr;
     }
 
     auto policy = m_config.EvictionPolicy;
+    
+    TValue* ret_val = NULL;
 
     if (policy == SmartCache::CacheEvictionPolicy::LeastFrequentlyUsed)
     {
@@ -107,7 +112,7 @@ inline TValue* SmartCacheImpl<TKey, TValue>::Get(TKey key)
         std::make_heap(m_heap.begin(), m_heap.end(), [](Item * lhs, Item * rhs){
             return lhs->priority > rhs->priority;
         });
-        return & item->val;
+        ret_val = & item->val;
     }
     else if (policy == SmartCache::CacheEvictionPolicy::LeastRecentlyUsed || 
                 policy == SmartCache::CacheEvictionPolicy::MostRecentlyUsed)
@@ -118,12 +123,24 @@ inline TValue* SmartCacheImpl<TKey, TValue>::Get(TKey key)
         //
         m_elementSequence.emplace_front(lookupItr->second);
         m_elementSequence.pop_back();
-        return &(m_elementSequence.front()->val);
+        ret_val = &(m_elementSequence.front()->val);
     }
     else
     {
         throw std::exception();
     }
+
+    auto end = std::chrono::high_resolution_clock::now();
+    long duration_ = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+    double duration = (double)(duration_ / 1.0);
+    
+    SmartCache::CacheRequestEventMessage msg;
+    msg.ConfigId = m_config.ConfigId;
+    msg.Key = key;
+    msg.Latency = duration;
+    m_config.SendTelemetryMessage(msg);
+
+    return ret_val;
 }
 
 template<typename TKey, typename TValue>

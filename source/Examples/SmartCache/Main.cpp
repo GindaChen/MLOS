@@ -158,14 +158,13 @@ main(
 
     // Now we run a workload to exercise the SmartCache.
     //
-    for (int observations = 0; observations < 100; observations++)
+    for (int observations = 0; observations < 500; observations++)
     {
         std::cout << "observations: " << observations << std::endl;
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 20; i++)
         {
-            /// CyclicalWorkload(2048, smartCache);
-            LFUFriendlyWorkload(smartCache, config.CacheSize, 10, 100);
+            CyclicalWorkload(2048, smartCache);
         }
 
         // After having run a workload for a while, we want to check for a new

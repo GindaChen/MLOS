@@ -44,6 +44,11 @@ namespace SmartCache
         private static int isInCacheCount = 0;
 
         /// <summary>
+        /// A running latency counter.
+        /// </summary>
+        private static double totalLatency = 0;
+
+        /// <summary>
         /// A running count of the total number of requests for the cache.
         /// </summary>
         private static int totalRequestCount = 0;
@@ -103,8 +108,7 @@ namespace SmartCache
                 dimension: new CategoricalDimension(
                     "cache_implementation",
                     CacheEvictionPolicy.LeastRecentlyUsed,
-                    CacheEvictionPolicy.MostRecentlyUsed,
-                    CacheEvictionPolicy.LeastFrequentlyUsed))
+                    CacheEvictionPolicy.MostRecentlyUsed))
             .Join(
                 subgrid: new Hypergrid(
                     name: "lru_cache_config",
@@ -114,12 +118,7 @@ namespace SmartCache
                 subgrid: new Hypergrid(
                     name: "mru_cache_config",
                     dimension: new DiscreteDimension("cache_size", min: 1, max: 1 << 12)),
-                onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.MostRecentlyUsed))
-            .Join(
-                subgrid: new Hypergrid(
-                    name: "lfu_cache_config",
-                    dimension: new DiscreteDimension("cache_size", min: 1, max: 1 << 12)),
-                onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.LeastFrequentlyUsed));
+                onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.MostRecentlyUsed));
 
             // Create optimization problem.
             //
@@ -135,7 +134,7 @@ namespace SmartCache
                 ContextSpace = null,
                 ObjectiveSpace = new Hypergrid(
                     name: "objectives",
-                    dimensions: new ContinuousDimension(name: "HitRate", min: 0.0, max: 1.0)),
+                    dimensions: new ContinuousDimension(name: "Latency", min: 0.0, max: 10000.0)),
             };
 
             // Define optimization objective.
@@ -145,8 +144,8 @@ namespace SmartCache
                 {
                     // Tell the optimizer that we want to maximize hit rate.
                     //
-                    Name = "HitRate",
-                    Minimize = false,
+                    Name = "Latency",
+                    Minimize = true,
                 });
 
             // Get a local reference to the optimizer to reuse when processing messages later on.
@@ -166,10 +165,11 @@ namespace SmartCache
         {
             // Update hit rate
             //
-            if (msg.IsInCache)
-            {
-                ++isInCacheCount;
-            }
+            // if (msg.IsInCache)
+            // {
+            //     ++isInCacheCount;
+            // }
+            totalLatency += msg.Latency;
 
             ++totalRequestCount;
         }
@@ -196,8 +196,10 @@ namespace SmartCache
                 if (totalRequestCount != 0)
                 {
                     double hitRate = (double)isInCacheCount / (double)totalRequestCount;
+                    double latency = (double)totalLatency / (double)totalRequestCount;
 
                     isInCacheCount = 0;
+                    totalLatency = 0;
                     totalRequestCount = 0;
 
                     // Let's assemble an observation message that consists of
@@ -210,7 +212,6 @@ namespace SmartCache
                     {
                         CacheEvictionPolicy.LeastRecentlyUsed => currentConfigDictionary["lru_cache_config.cache_size"] = smartCacheConfig.CacheSize,
                         CacheEvictionPolicy.MostRecentlyUsed => currentConfigDictionary["mru_cache_config.cache_size"] = smartCacheConfig.CacheSize,
-                        CacheEvictionPolicy.LeastFrequentlyUsed => currentConfigDictionary["lfu_cache_config.cache_size"] = smartCacheConfig.CacheSize,
                         _ => throw new NotImplementedException(),
                     };
 
@@ -220,7 +221,7 @@ namespace SmartCache
                     //
                     Console.WriteLine("Register an observation");
 
-                    OptimizerProxy.Register(currentConfigJsonString, "HitRate", hitRate);
+                    OptimizerProxy.Register(currentConfigJsonString, "Latency", latency);
                 }
 
                 // Now, ask the optimizer for a new configuration suggestion.
