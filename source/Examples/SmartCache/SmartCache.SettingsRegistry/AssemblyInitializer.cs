@@ -108,17 +108,17 @@ namespace SmartCache
             .Join(
                 subgrid: new Hypergrid(
                     name: "lru_cache_config",
-                    dimension: new DiscreteDimension("cache_size", min: 1, max: 1 << 12)),
+                    dimension: new DiscreteDimension("cache_size", min: 1, max: 256)),
                 onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.LeastRecentlyUsed))
             .Join(
                 subgrid: new Hypergrid(
                     name: "mru_cache_config",
-                    dimension: new DiscreteDimension("cache_size", min: 1, max: 1 << 12)),
+                    dimension: new DiscreteDimension("cache_size", min: 1, max: 256)),
                 onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.MostRecentlyUsed))
             .Join(
                 subgrid: new Hypergrid(
                     name: "lfu_cache_config",
-                    dimension: new DiscreteDimension("cache_size", min: 1, max: 1 << 12)),
+                    dimension: new DiscreteDimension("cache_size", min: 1, max: 256)),
                 onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.LeastFrequentlyUsed));
 
             // Create optimization problem.

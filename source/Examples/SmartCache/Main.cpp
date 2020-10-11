@@ -165,7 +165,7 @@ main(
         for (int i = 0; i < 1; i++)
         {
             /// CyclicalWorkload(2048, smartCache);
-            LFUFriendlyWorkload(smartCache, config.CacheSize, 10, 100);
+            LFUFriendlyWorkload(smartCache, 128, 10, 100);
         }
 
         // After having run a workload for a while, we want to check for a new
