@@ -43,7 +43,6 @@ namespace SmartCache
     {
         LeastRecentlyUsed,
         MostRecentlyUsed,
-        LeastFrequentlyUsed,
     }
 
     /// <summary>
@@ -80,6 +79,9 @@ namespace SmartCache
 
         [ScalarSetting]
         internal bool IsInCache;
+
+        [ScalarSetting]
+        internal long long Latency;
     }
 
     /// <summary>
