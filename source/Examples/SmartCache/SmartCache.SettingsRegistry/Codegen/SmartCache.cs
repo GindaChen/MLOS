@@ -79,6 +79,9 @@ namespace SmartCache
 
         [ScalarSetting]
         internal bool IsInCache;
+
+        [ScalarSetting]
+        internal double Latency;
     }
 
     /// <summary>
