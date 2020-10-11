@@ -49,6 +49,11 @@ namespace SmartCache
         private static int totalRequestCount = 0;
 
         /// <summary>
+        /// The total runtime of the cache request time.
+        /// </summary>
+        private static int totalLatency = 0;
+
+        /// <summary>
         /// A local reference to the connection to the optimizer service.
         /// </summary>
         private static readonly IOptimizerProxy OptimizerProxy;
@@ -120,24 +125,43 @@ namespace SmartCache
             // In this case we declare "hit rate", which will be calculated as a
             // percentage, is the thing we want the optimizer to improve.
             //
+            
+            // var optimizationProblem = new OptimizationProblem
+            // {
+            //     ParameterSpace = cacheSearchSpace,
+            //     ContextSpace = null,
+            //     ObjectiveSpace = new Hypergrid(
+            //         name: "objectives",
+            //         dimensions: new ContinuousDimension(name: "HitRate", min: 0.0, max: 1.0)),
+            // };
+
             var optimizationProblem = new OptimizationProblem
             {
                 ParameterSpace = cacheSearchSpace,
                 ContextSpace = null,
                 ObjectiveSpace = new Hypergrid(
                     name: "objectives",
-                    dimensions: new ContinuousDimension(name: "HitRate", min: 0.0, max: 1.0)),
+                    dimensions: new ContinuousDimension(name: "Latency", min: 0.0, max: 50000.0)),
             };
 
             // Define optimization objective.
             //
+            // optimizationProblem.Objectives.Add(
+            //     new OptimizationObjective
+            //     {
+            //         // Tell the optimizer that we want to maximize hit rate.
+            //         //
+            //         Name = "HitRate",
+            //         Minimize = false,
+            //     });
+
             optimizationProblem.Objectives.Add(
                 new OptimizationObjective
                 {
                     // Tell the optimizer that we want to maximize hit rate.
                     //
-                    Name = "HitRate",
-                    Minimize = false,
+                    Name = "Latency",
+                    Minimize = true,
                 });
 
             // Get a local reference to the optimizer to reuse when processing messages later on.
@@ -163,6 +187,8 @@ namespace SmartCache
             }
 
             ++totalRequestCount;
+            totalLatency += msg.latency;
+
         }
 
         /// <summary>
@@ -186,9 +212,12 @@ namespace SmartCache
             {
                 if (totalRequestCount != 0)
                 {
-                    double hitRate = (double)isInCacheCount / (double)totalRequestCount;
-
+                    double hitRate = (double) isInCacheCount / (double) totalRequestCount;
                     isInCacheCount = 0;
+
+                    double latency = (double) totalLatency / (double) totalRequestCount;
+                    totalLatency = 0;
+                    
                     totalRequestCount = 0;
 
                     // Let's assemble an observation message that consists of
@@ -210,7 +239,8 @@ namespace SmartCache
                     //
                     Console.WriteLine("Register an observation");
 
-                    OptimizerProxy.Register(currentConfigJsonString, "HitRate", hitRate);
+                    // OptimizerProxy.Register(currentConfigJsonString, "HitRate", hitRate);
+                    OptimizerProxy.Register(currentConfigJsonString, "Latency", latency);
                 }
 
                 // Now, ask the optimizer for a new configuration suggestion.
