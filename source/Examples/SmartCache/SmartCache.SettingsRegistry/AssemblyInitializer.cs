@@ -108,7 +108,8 @@ namespace SmartCache
                 dimension: new CategoricalDimension(
                     "cache_implementation",
                     CacheEvictionPolicy.LeastRecentlyUsed,
-                    CacheEvictionPolicy.MostRecentlyUsed))
+                    CacheEvictionPolicy.MostRecentlyUsed,
+                    CacheEvictionPolicy.LeastFrequentlyUsed))
             .Join(
                 subgrid: new Hypergrid(
                     name: "lru_cache_config",
@@ -118,7 +119,12 @@ namespace SmartCache
                 subgrid: new Hypergrid(
                     name: "mru_cache_config",
                     dimension: new DiscreteDimension("cache_size", min: 1, max: 1 << 12)),
-                onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.MostRecentlyUsed));
+                onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.MostRecentlyUsed))
+            .Join(
+                subgrid: new Hypergrid(
+                    name: "lfu_cache_config",
+                    dimension: new DiscreteDimension("cache_size", min: 1, max: 1 << 12)),
+                onExternalDimension: new CategoricalDimension("cache_implementation", CacheEvictionPolicy.LeastFrequentlyUsed));
 
             // Create optimization problem.
             //
@@ -212,6 +218,7 @@ namespace SmartCache
                     {
                         CacheEvictionPolicy.LeastRecentlyUsed => currentConfigDictionary["lru_cache_config.cache_size"] = smartCacheConfig.CacheSize,
                         CacheEvictionPolicy.MostRecentlyUsed => currentConfigDictionary["mru_cache_config.cache_size"] = smartCacheConfig.CacheSize,
+                        CacheEvictionPolicy.LeastFrequentlyUsed => currentConfigDictionary["lfu_cache_config.cache_size"] = smartCacheConfig.CacheSize,
                         _ => throw new NotImplementedException(),
                     };
 
